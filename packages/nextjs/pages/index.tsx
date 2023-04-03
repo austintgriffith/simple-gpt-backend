@@ -1,9 +1,87 @@
+import { ReactNode, useState } from "react";
 import Head from "next/head";
-import Link from "next/link";
 import type { NextPage } from "next";
-import { BugAntIcon, SparklesIcon } from "@heroicons/react/24/outline";
+import { useInterval } from "usehooks-ts";
+
+interface GptObject {
+  [key: string]: {
+    role: string;
+    content: string;
+  };
+}
+
+const callGpt = async (msg: string) => {
+  const data = {
+    message: msg,
+  };
+
+  fetch("http://localhost:44444/", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(data),
+  })
+    .then(response => {
+      // handle the response
+      console.log(response);
+    })
+    .catch(error => {
+      // handle the error
+      console.log(error);
+    });
+};
 
 const Home: NextPage = () => {
+  const [inputValue, setInputValue] = useState("");
+
+  const initial: GptObject = {
+    // your gpt object here
+  };
+  const [gpt, setGpt] = useState(initial);
+
+  const readGpt = async () => {
+    fetch("http://localhost:44444/", {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    })
+      .then(response => {
+        // handle the response
+        response.text().then(text => {
+          console.log("response", text);
+          try {
+            setGpt(JSON.parse(text).reverse());
+          } catch (e) {
+            console.log("err", e);
+          }
+        });
+      })
+      .catch(error => {
+        // handle the error
+        console.log(error);
+      });
+  };
+
+  useInterval(() => {
+    readGpt();
+  }, 1500);
+
+  const handleInputChange = (event: any) => {
+    setInputValue(event.target.value);
+  };
+
+  const stateRender: ReactNode[] = [];
+
+  Object.keys(gpt).forEach(key => {
+    stateRender.push(
+      <div>
+        {gpt[key].role}: {gpt[key].content}
+      </div>,
+    );
+  });
+
   return (
     <>
       <Head>
@@ -11,46 +89,26 @@ const Home: NextPage = () => {
         <meta name="description" content="Created with 🏗 scaffold-eth" />
       </Head>
 
-      <div className="flex items-center flex-col flex-grow pt-10">
-        <div className="px-5">
-          <h1 className="text-center mb-8">
-            <span className="block text-2xl mb-2">Welcome to</span>
-            <span className="block text-4xl font-bold">scaffold-eth 2</span>
-          </h1>
-          <p className="text-center text-lg">
-            Get started by editing{" "}
-            <code className="italic bg-base-300 text-base font-bold">packages/nextjs/pages/index.tsx</code>
-          </p>
-          <p className="text-center text-lg">
-            Edit your smart contract <code className="italic bg-base-300 text-base font-bold">YourContract.sol</code> in{" "}
-            <code className="italic bg-base-300 text-base font-bold">packages/hardhat/contracts</code>
-          </p>
-        </div>
+      <div className="flex flex-col items-center justify-center min-h-screen py-2">
+        <input
+          type="text"
+          value={inputValue}
+          onChange={handleInputChange}
+          placeholder="Type here"
+          className="input w-full max-w-xs"
+          autoFocus={true}
+        />
 
-        <div className="flex-grow bg-base-300 w-full mt-16 px-8 py-12">
-          <div className="flex justify-center items-center gap-12 flex-col sm:flex-row">
-            <div className="flex flex-col bg-base-100 px-10 py-10 text-center items-center max-w-xs rounded-3xl">
-              <BugAntIcon className="h-8 w-8 fill-secondary" />
-              <p>
-                Tinker with your smart contract using the{" "}
-                <Link href="/debug" passHref className="link">
-                  Debug Contract
-                </Link>{" "}
-                tab.
-              </p>
-            </div>
-            <div className="flex flex-col bg-base-100 px-10 py-10 text-center items-center max-w-xs rounded-3xl">
-              <SparklesIcon className="h-8 w-8 fill-secondary" />
-              <p>
-                Experiment with{" "}
-                <Link href="/example-ui" passHref className="link">
-                  Example UI
-                </Link>{" "}
-                to build your own UI.
-              </p>
-            </div>
-          </div>
-        </div>
+        <button
+          onClick={() => {
+            callGpt(inputValue);
+            setInputValue("");
+          }}
+          className="btn btn-primary mt-4"
+        >
+          send
+        </button>
+        <div className="items-center justify-center min-h-screen py-2">{stateRender}</div>
       </div>
     </>
   );

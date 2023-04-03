@@ -1,3 +1,4 @@
+packages/backend/.env
 node_modules
 
 # dependencies, yarn, etc
